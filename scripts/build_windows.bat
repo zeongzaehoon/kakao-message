@@ -15,7 +15,7 @@ if errorlevel 1 goto failed
 .venv-windows-build\Scripts\python.exe scripts\build_windows.py
 if errorlevel 1 goto failed
 echo.
-echo Output: dist\releases\0.1.0\Kakao-Friend-Sender-0.1.0-windows-x64.exe
+echo Output: dist\releases\ ^(versioned EXE, checksums, self-test report^)
 echo Windows KakaoTalk sending is not supported yet. This build is for UI and diagnostics.
 if not defined CI pause
 exit /b 0
