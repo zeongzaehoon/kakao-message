@@ -90,6 +90,10 @@ class Driver:
             raise IntegrationError(f"화면 요소를 하나로 식별할 수 없습니다 ({len(nodes)}개). 연결 설정/열린 창을 확인해 주세요.")
         return nodes[0]
 
+    def chat_controls(self, chat: Node, selectors: dict, stop: Event) -> tuple[Node, Node]:
+        return (self.one(selectors["editor"], stop, chat),
+                self.one(selectors["send_button"], stop, chat))
+
     def snapshot(self, stop: Event) -> dict:
         nodes = self.walk(self.roots(), stop)
         return {"platform": self.platform, "pid": self.pid,

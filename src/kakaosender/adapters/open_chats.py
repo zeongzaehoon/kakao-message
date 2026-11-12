@@ -66,8 +66,7 @@ class OpenChatsBackend(ChatSender):
                 reason = "같은 제목의 창 또는 구분되지 않는 창 · 선택 불가"
             else:
                 try:
-                    editor = self.driver.one(self.selectors["editor"], stop, node)
-                    button = self.driver.one(self.selectors["send_button"], stop, node)
+                    editor, button = self.driver.chat_controls(node, self.selectors, stop)
                     if not self.driver.can_write(editor) or not self.driver.can_press(button):
                         reason = "입력 또는 전송 동작 미지원"
                 except IntegrationError:

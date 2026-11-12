@@ -31,6 +31,10 @@ def connection_status() -> dict:
     }
 
 
+class InvalidAccessibilityElement(IntegrationError):
+    """A read encountered an AX element removed during a UI update."""
+
+
 class MacDriver(Driver):
     platform = "darwin"
     supports_photos = True
@@ -221,9 +225,51 @@ class MacDriver(Driver):
         code, children = self.ax.AXUIElementCopyAttributeValue(node.native, "AXChildren", None)
         if code in {-25205, -25212}:  # unsupported attribute / no value: leaf
             return []
+        if code == -25202:
+            raise InvalidAccessibilityElement("카카오톡 화면 요소가 갱신되어 다시 읽어야 합니다 (-25202).")
         if code != 0:
             raise IntegrationError(f"접근성 자식 요소 읽기 실패: {code}")
         return [self._node(ref) for ref in (children or [])]
+
+    def _search_parent(self, parent: Node) -> Node:
+        fresh = self.refresh_node(parent)
+        if (not fresh.role or fresh.role != parent.role or fresh.identifier != parent.identifier
+                or canonical(fresh.name) != canonical(parent.name) or fresh.key != parent.key
+                or not self.same_element(fresh.native, parent.native)):
+            raise IntegrationError("화면을 읽는 동안 대상이 변경되었습니다. 목록을 새로고침해 주세요.")
+        return fresh
+
+    def chat_controls(self, chat: Node, selectors: dict, stop: Event) -> tuple[Node, Node]:
+        # The composer is separate from the virtualized message history.
+        # Never walk history rows to locate input controls: their AX handles
+        # can disappear while a newly opened conversation loads messages.
+        area = self.one({"role": "AXScrollArea", "identifier": "_NS:47"},
+                        stop, chat, roots_only=True)
+        editor = self.one(selectors["editor"], stop, area, roots_only=True)
+        button = self.one(selectors["send_button"], stop, chat, roots_only=True)
+        self._search_parent(chat)
+        return editor, button
+
+    def find(self, selector: dict, stop: Event, parent: Node | None = None,
+             recipient: str = "", roots_only: bool = False) -> list[Node]:
+        # A newly opened chat can replace descendants while AX is walking them.
+        # Discard the entire partial read; never skip a stale branch (it might
+        # hide a duplicate control), rebind the parent, or repeat a UI action.
+        for attempt in range(3):
+            checkpoint(stop)
+            current = self._search_parent(parent) if parent is not None else None
+            try:
+                found = super().find(selector, stop, current, recipient, roots_only)
+            except InvalidAccessibilityElement as exc:
+                if attempt == 2:
+                    raise IntegrationError("카카오톡 화면이 계속 변경되어 입력/전송 대상을 확인하지 못했습니다. 잠시 후 다시 시도해 주세요 (-25202).") from exc
+                stop.wait(.1)
+                continue
+            checkpoint(stop)
+            if parent is not None:
+                self._search_parent(parent)
+            return found
+        return []
 
     def read_value(self, node: Node) -> str:
         value = self._get(node.native, "AXValue")

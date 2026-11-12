@@ -30,8 +30,7 @@ class ChatSender:
 
     def _controls(self, friend: Friend, stop: Event):
         chat = self._chat(friend, stop)
-        editor = self.driver.one(self.selectors["editor"], stop, chat)
-        button = self.driver.one(self.selectors["send_button"], stop, chat)
+        editor, button = self.driver.chat_controls(chat, self.selectors, stop)
         if not self.driver.can_write(editor) or not self.driver.can_press(button):
             raise IntegrationError("입력창 쓰기 또는 전송 버튼의 접근성 동작이 지원되지 않습니다.")
         return editor, button

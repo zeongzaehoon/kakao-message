@@ -49,6 +49,34 @@ def run_open_chats_check(report: Path, from_list: bool = False) -> int:
     return 0 if payload["ok"] else 1
 
 
+def run_chat_prepare_check(report: Path, target_path: Path) -> int:
+    """Check only an explicitly selected, already open chat; never type or send."""
+    from .adapters import native_driver
+    backend = None
+    try:
+        target = json.loads(target_path.read_text(encoding="utf-8"))
+        if target.get("confirmed_chat") is not True:
+            raise IntegrationError("사용자가 확인한 대화창 대상이 필요합니다.")
+        backend = OpenChatsBackend(native_driver(), {}, expected_pid=target.get("pid"))
+        if target.get("pid") != backend.driver.pid:
+            raise IntegrationError("확인한 대상의 카카오톡 프로세스가 변경되었습니다.")
+        listing = backend.list_friends(Event())
+        selected = [friend for friend in listing.friends if friend.selectable
+                    and friend.key == target.get("key") and friend.name == target.get("name")]
+        if len(selected) != 1:
+            raise IntegrationError("확인한 열린 대화창을 유일하게 식별하지 못했습니다.")
+        backend.prepare(selected[0], listing.scope, Event())
+        payload = {"ok": True, "target_verified": True, "input_empty": True}
+    except Exception as exc:
+        payload = {"ok": False, "error": str(exc)}
+    finally:
+        if backend is not None:
+            backend.close()
+    payload.update(sent=0, typed=0)
+    report.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    return 0 if payload["ok"] else 1
+
+
 def run_clear_self_draft(report: Path, target_path: Path) -> int:
     """Explicit user-requested text clearing, only in a confirmed self-chat."""
     from .adapters import native_driver
