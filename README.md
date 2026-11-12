@@ -13,7 +13,7 @@
 
 [v0.1.1 다운로드](https://github.com/zeongzaehoon/kakao-message/releases/tag/v0.1.1) · [전체 Releases](https://github.com/zeongzaehoon/kakao-message/releases)
 
-저장소 접근 권한이 있는 GitHub 계정으로 로그인한 뒤, 릴리스 페이지의 **Assets → `Kakao Friend Sender_0.1.1_aarch64.dmg`**를 클릭합니다. `Source code (zip)`은 설치 파일이 아닙니다. 앱 설치에는 Git·Python이 필요하지 않습니다.
+저장소 접근 권한이 있는 GitHub 계정으로 로그인한 뒤, 릴리스 페이지의 **Assets → `Kakao-Friend-Sender-0.1.1-macos-arm64.dmg`**를 클릭합니다. `Source code (zip)`은 설치 파일이 아닙니다. 앱 설치에는 Git·Python이 필요하지 않습니다.
 
 `git clone`·`git pull`은 소스 코드만 받으며 Releases의 DMG는 내려받지 않습니다. 새 버전은 Releases에서 다시 다운로드해 앱을 교체합니다. 현재 배포는 개발용 프리릴리스입니다.
 
@@ -87,9 +87,11 @@ hdiutil verify "src-tauri/target/release/bundle/dmg/Kakao Friend Sender_0.1.1_aa
 3. 자체 검사 JSON의 `ok`·`frozen`이 모두 `true`인지 확인하고 체크섬을 생성합니다. 아래 명령의 버전은 게시할 버전으로 바꿉니다.
 
 ```bash
-cd src-tauri/target/release/bundle/dmg
-shasum -a 256 "Kakao Friend Sender_0.1.1_aarch64.dmg" > SHA256SUMS.txt
-cd ../../../../..
+mkdir -p dist/releases/0.1.1
+cp "src-tauri/target/release/bundle/dmg/Kakao Friend Sender_0.1.1_aarch64.dmg" dist/releases/0.1.1/Kakao-Friend-Sender-0.1.1-macos-arm64.dmg
+cd dist/releases/0.1.1
+shasum -a 256 Kakao-Friend-Sender-0.1.1-macos-arm64.dmg > SHA256SUMS.txt
+cd ../../..
 ```
 
 4. 변경을 커밋·푸시하고 같은 커밋에 태그를 붙입니다. GitHub CLI는 저장소 쓰기 권한이 있는 계정으로 로그인해야 합니다.
@@ -99,8 +101,8 @@ git push origin main
 git tag v0.1.1
 git push origin v0.1.1
 gh release create v0.1.1 \
-  "src-tauri/target/release/bundle/dmg/Kakao Friend Sender_0.1.1_aarch64.dmg" \
-  src-tauri/target/release/bundle/dmg/SHA256SUMS.txt \
+  dist/releases/0.1.1/Kakao-Friend-Sender-0.1.1-macos-arm64.dmg \
+  dist/releases/0.1.1/SHA256SUMS.txt \
   --repo zeongzaehoon/kakao-message --verify-tag --draft --prerelease \
   --title "v0.1.1 — macOS 개발 빌드" \
   --notes "Apple Silicon / macOS 14.4 이상. ad-hoc 서명, 미공증 개발 빌드. Windows 전송 미지원."
