@@ -1,25 +1,22 @@
 @echo off
 setlocal
 cd /d "%~dp0.."
-py -3.12 -c "import struct; assert struct.calcsize('P') == 8" >nul 2>&1
+where cargo >nul 2>&1
 if errorlevel 1 (
-  echo Install Python 3.12 x64 from python.org, including the py launcher.
+  echo Install Rust stable with the MSVC toolchain and Visual Studio C++ Build Tools.
   goto failed
 )
-if not exist ".venv-windows-build\Scripts\python.exe" py -3.12 -m venv .venv-windows-build
+cargo test --locked --manifest-path src-tauri/Cargo.toml
 if errorlevel 1 goto failed
-.venv-windows-build\Scripts\python.exe -m pip install --require-hashes -r requirements/windows.txt
+cargo build --release --locked --manifest-path src-tauri/Cargo.toml
 if errorlevel 1 goto failed
-.venv-windows-build\Scripts\python.exe -m pytest -q
+powershell -NoProfile -Command "$m = cargo metadata --no-deps --format-version 1 --manifest-path src-tauri/Cargo.toml | ConvertFrom-Json; if ($LASTEXITCODE -ne 0) { exit 1 }; $v = ($m.packages | Where-Object name -eq 'kakao-friend-sender').version; $out = Join-Path 'dist/releases' $v; New-Item -ItemType Directory -Force $out | Out-Null; $exe = Join-Path $out ('Kakao-Friend-Sender-' + $v + '-windows-x64.exe'); Copy-Item 'src-tauri/target/release/kakao-friend-sender.exe' $exe; & $exe --self-test (Join-Path $out 'windows-self-test.json'); if ($LASTEXITCODE -ne 0) { exit 1 }; $hash = (Get-FileHash $exe -Algorithm SHA256).Hash.ToLower(); ($hash + '  ' + (Split-Path $exe -Leaf)) | Set-Content -Encoding ascii (Join-Path $out 'SHA256SUMS.txt')"
 if errorlevel 1 goto failed
-.venv-windows-build\Scripts\python.exe scripts\build_windows.py
-if errorlevel 1 goto failed
-echo.
-echo Output: dist\releases\ ^(versioned EXE, checksums, self-test report^)
-echo Windows KakaoTalk sending is not supported yet. This build is for UI and diagnostics.
+echo Output: dist\releases\version\
+echo Windows KakaoTalk sending is not supported. This is a native Rust UI build.
 if not defined CI pause
 exit /b 0
 :failed
-echo Build failed. Review the error above; no release EXE was confirmed.
+echo Build failed. No release executable was confirmed.
 if not defined CI pause
 exit /b 1

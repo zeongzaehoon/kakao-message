@@ -1,15 +1,28 @@
 [package]
 name = "kakao-friend-sender"
-version = "0.1.1"
-description = "Kakao Friend Sender native macOS launcher"
+version = "0.2.7"
+description = "Native Rust KakaoTalk desktop sender"
 edition = "2021"
-rust-version = "1.77.2"
+rust-version = "1.88"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", default-features = false , features = [] }
+tauri = { version = "2", default-features = false, features = [] }
+eframe = { version = "=0.33.3", default-features = false, features = ["default_fonts", "glow", "x11", "wayland"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+unicode-normalization = "0.1"
+rusqlite = { version = "0.32", features = ["bundled"] }
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp", "bmp"] }
+rfd = "0.17"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6"
+objc2-foundation = "0.3"
+objc2-app-kit = "0.3"
 
 [features]
 custom-protocol = ["tauri/custom-protocol"]

@@ -1,34 +1,43 @@
 {
     "$schema": "https://schema.tauri.app/config/2",
     "productName": "Kakao Friend Sender",
-    "version": "0.1.1",
+    "version": "0.2.7",
     "identifier": "local.kakaofriendsender.prototype",
-    "build": {
-        "beforeBuildCommand": ".venv/bin/python scripts/build_tauri_runtime.py",
-        "beforeDevCommand": ".venv/bin/python scripts/build_tauri_runtime.py"
-    },
+    "build": {},
     "app": {
         "windows": []
     },
     "bundle": {
         "active": true,
-        "targets": ["app", "dmg"],
-        "externalBin": ["../build/tauri-runtime/KakaoSenderRuntime"],
+        "targets": [
+            "app",
+            "dmg"
+        ],
         "category": "Utility",
         "shortDescription": "로컬 카카오톡 대화방 선택 및 메시지 전송 도구",
-        "icon": ["icons/icon.icns", "icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png"],
+        "icon": [
+            "icons/icon.icns",
+            "icons/32x32.png",
+            "icons/128x128.png",
+            "icons/128x128@2x.png"
+        ],
         "macOS": {
             "minimumSystemVersion": "14.4",
             "signingIdentity": "-",
             "hardenedRuntime": false,
-            "files": {
-                "Frameworks": "../build/tauri-runtime/dist/KakaoSenderRuntime.app/Contents/Frameworks",
-                "Resources": "../build/tauri-runtime/dist/KakaoSenderRuntime.app/Contents/Resources"
-            },
             "dmg": {
-                "windowSize": { "width": 660, "height": 420 },
-                "appPosition": { "x": 180, "y": 190 },
-                "applicationFolderPosition": { "x": 480, "y": 190 }
+                "windowSize": {
+                    "width": 660,
+                    "height": 420
+                },
+                "appPosition": {
+                    "x": 180,
+                    "y": 190
+                },
+                "applicationFolderPosition": {
+                    "x": 480,
+                    "y": 190
+                }
             }
         }
     }

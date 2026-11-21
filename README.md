@@ -1,137 +1,92 @@
 # Kakao Friend Sender
 
-카카오톡 채팅방을 선택해 글·사진을 순차 전송하는 비공식 macOS 데스크톱 앱입니다.
+카카오톡 채팅방을 선택해 글·사진을 순차 전송하는 **Rust 네이티브 macOS 앱**입니다.
 
-- 채팅 목록을 먼저 조회하고 선택한 방만 열어 전송합니다.
-- 글·사진을 함께 작성하고, 진행 내역에서 작성 화면으로 돌아갈 수 있습니다.
-- 전송 전 대상·내용을 확인하며, 실제 전송은 기본 해제입니다.
-- 기존 초안·중복 제목·대상 변경·불확실한 결과를 감지하면 중단합니다.
-- 글·사진 전송이 모두 확인된 대화창을 닫고 다음 방으로 이동합니다.
-- AI·OCR·고정 좌표 없이 macOS 접근성 API로 카카오톡을 제어합니다.
+- 카카오톡 스타일의 다크 사이드바·채팅 목록·노란 말풍선 미리보기를 제공합니다.
+- 화면은 egui/eframe, 목록 조회·전송·저장도 Rust로 구현합니다. Python·Qt 실행기가 필요하지 않습니다.
+- 10,000개 목록을 고려해 화면에 보이는 행만 그리고, 검색·선택은 메모리에서 처리합니다.
+- 접근성 `AXRows`를 256개씩 읽고 방 제목만 조회합니다. 전체 목록을 주기적으로 다시 읽지 않습니다.
+- 조회한 방 객체를 같은 작업 스레드에 보관합니다. 전송 때 세션 키로 바로 참조하며 전체 목록 재조회·이름 대체 검색을 하지 않습니다.
+- 큰 사진은 원본을 보존하고 전송용 PNG를 20 MB 이하로 자동 조정합니다.
+- 글·사진 미리보기, 대상 확인, 진행 내역, 작성 화면 복귀, CSV 저장을 지원합니다.
+- 중복 이름·기존 초안·대상 변경·불확실한 전송은 중단합니다. 전송 동작을 자동 재시도하지 않습니다.
+- 글·사진 전송 완료를 확인한 창만 닫고 다음 방으로 이동합니다.
 
-## 다운로드·사용
+## 설치·사용
 
-[v0.1.1 다운로드](https://github.com/zeongzaehoon/kakao-message/releases/tag/v0.1.1) · [전체 Releases](https://github.com/zeongzaehoon/kakao-message/releases)
+[macOS DMG 다운로드 · v0.2.7](https://github.com/zeongzaehoon/kakao-message/releases/download/v0.2.7/Kakao-Friend-Sender-0.2.7-macos-arm64.dmg) · [릴리스 안내](https://github.com/zeongzaehoon/kakao-message/releases/tag/v0.2.7) · [이전 버전](https://github.com/zeongzaehoon/kakao-message/releases)
 
-저장소 접근 권한이 있는 GitHub 계정으로 로그인한 뒤, 릴리스 페이지의 **Assets → `Kakao-Friend-Sender-0.1.1-macos-arm64.dmg`**를 클릭합니다. `Source code (zip)`은 설치 파일이 아닙니다. 앱 설치에는 Git·Python이 필요하지 않습니다.
+개발용 프리릴리스입니다. 릴리스의 **Assets**에서도 DMG를 받을 수 있으며, `Source code (zip)`은 설치 파일이 아닙니다. DMG와 `SHA256SUMS.txt`를 같은 폴더에 받고 `shasum -a 256 -c SHA256SUMS.txt`로 무결성을 확인할 수 있습니다.
 
-`git clone`·`git pull`은 소스 코드만 받으며 Releases의 DMG는 내려받지 않습니다. 새 버전은 Releases에서 다시 다운로드해 앱을 교체합니다. 현재 배포는 개발용 프리릴리스입니다.
+1. Apple Silicon Mac, macOS 14.4 이상에서 DMG를 열고 안의 앱을 더블클릭합니다. **설치 / 업데이트**를 누르면 `/Applications/Kakao Friend Sender.app`에 설치하고 실행합니다.
+2. 카카오톡에 로그인하고 메인 창의 **채팅 탭**을 엽니다.
+3. 시스템 설정 → 개인정보 보호 및 보안 → 손쉬운 사용에서 이 앱을 허용합니다.
+4. 새로고침 → 대화방 선택 → 글·사진 작성 → 대상 확인을 진행합니다.
+5. 실제 전송을 켜고 미리보기에서 대상·내용을 확인한 뒤 전송합니다.
 
-1. **Apple Silicon Mac, macOS 14.4 이상**에서 DMG를 열고 앱을 응용 프로그램 폴더로 옮깁니다.
-2. 카카오톡에 로그인하고 메인 창의 **채팅 탭**을 엽니다. 개별 대화창은 미리 열지 않아도 됩니다.
-3. 시스템 설정 → 개인정보 보호 및 보안 → 손쉬운 사용에서 **Kakao Friend Sender**를 허용합니다.
-4. 앱에서 채팅방·글·사진을 선택하고, 실제 전송을 끈 상태로 대상을 확인합니다.
-5. 실제 전송을 켠 뒤 확인 화면에서 대상·내용을 검토하고 전송합니다.
+개발용 ad-hoc 서명이며 공증하지 않았습니다. 실행 파일 교체 후 접근성 권한 재등록이 필요할 수 있습니다. 작성 중인 글·사진은 메모리에만 있으므로 앱을 종료하기 전에 보관하세요.
 
-Python 별도 설치는 필요하지 않습니다. 현재 개발용 ad-hoc 서명이며 공증하지 않아 macOS 보안 경고가 나올 수 있습니다. 앱 교체 후 접근성 재허용이 필요할 수 있습니다.
+기존 앱이 실행 중이면 종료 안내가 나옵니다. 작성 내용을 보관하고 기존 앱을 종료한 뒤 **다시 확인**을 누르세요. 설정·전송 이력은 유지하며, 복사·서명 검사 후 앱만 교체합니다. 교체 또는 실행 요청 실패 시 이전 앱을 복구합니다. 더 최신 버전은 덮어쓰지 않습니다. 응용 프로그램 폴더에 쓰기 권한이 필요하며, 네트워크 자동 업데이트는 하지 않습니다.
 
-## 지원 범위·제한
+## 개발·빌드
 
-- macOS: 채팅 목록 조회·글·사진 전송. KakaoTalk 26.9.0에서 관측한 접근성 구조를 사용합니다.
-- Windows: 화면·접근성 진단용 **빌드 키트만 제공**합니다. 카카오톡 전송은 미지원이며 실제 EXE 빌드·실행은 미검증입니다.
-- 사진: JPG·PNG·WEBP·BMP, 최대 10장. 메모리에서 PNG로 준비하며 서버에 업로드하지 않습니다.
-- 접근성에 노출된 목록만 조회합니다. 계정의 모든 방을 보장하지 않으며 같은 제목의 방은 선택할 수 없습니다.
-- 전송 완료는 입력창·첨부창의 상태로 판단합니다. 서버 수신·상대 수신·읽음을 보장하지 않습니다.
-- 실패·결과 미확정 항목은 자동 재전송하지 않습니다. 창·프로세스 재생성을 넘는 영구 중복 방지는 보장하지 않습니다.
-- 입력창·전송 버튼은 작성 영역에서 직접 조회하며 과거 대화 목록을 순회하지 않습니다.
-- 화면 요소 갱신 오류(-25202)는 같은 대상에서 읽기만 최대 3회 시도합니다. 대상 변경·지속 오류는 중단하며 입력·전송 동작을 반복하지 않습니다.
-- 설정·전송 이력은 `~/Library/Application Support/KakaoFriendSender`에 저장합니다. 기존 초안은 일반 전송에서 덮어쓰지 않습니다.
-
-## 개발 시작
-
-macOS, Python 3.12가 필요합니다. 패키징에는 Xcode Command Line Tools·Rust stable·Node.js/npm도 필요합니다.
+Rust stable(1.88 이상), Xcode Command Line Tools가 필요합니다. APP·DMG 패키징에는 Node.js/npm과 Tauri CLI도 사용합니다. 앱 실행에는 Node.js·Python 설치가 필요하지 않습니다.
 
 ```bash
-python3.12 -m venv .venv
-.venv/bin/python -m pip install -r requirements/macos.txt
-.venv/bin/python -m kakaosender
+cargo run --manifest-path src-tauri/Cargo.toml
 ```
-
-## 자주 쓰는 명령
-
-저장소 루트에서 실행합니다.
 
 | 명령 | 용도 |
 |---|---|
-| `.venv/bin/python -m kakaosender` | 소스에서 앱 실행 |
-| `QT_QPA_PLATFORM=offscreen .venv/bin/python -m pytest -q` | 실제 전송 없는 자동 검사 |
-| `npm ci` | 고정된 Tauri 빌드 도구 설치 |
-| `npm run desktop:dev` | 내장 런타임을 재생성하고 개발 실행 |
-| `npm run desktop:build` | Tauri macOS APP·DMG 빌드 |
-| `cargo test --locked --manifest-path src-tauri/Cargo.toml` | Rust 실행기 검사 |
-| `scripts\build_windows.bat` | Windows x64에서 의존성 설치·검사·EXE 빌드 |
+| `cargo test --locked --manifest-path src-tauri/Cargo.toml` | 실제 전송 없는 Rust 검사 |
+| `cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings` | 정적 검사 |
+| `cargo fmt --manifest-path src-tauri/Cargo.toml --check` | 코드 형식 검사 |
+| `npm ci` | 고정된 패키징 도구 설치 |
+| `npm run desktop:build` | Rust APP·DMG 빌드 |
+| `scripts\build_windows.bat` | Windows MSVC에서 검사·EXE 빌드 |
 
-Mac 결과는 `src-tauri/target/release/bundle/` 아래 `macos/`와 `dmg/`에 생성됩니다. Tauri는 배포·실행을, 포함된 Python/PySide6 런타임은 화면·전송을 담당합니다.
+Mac 빌드는 서명·자체 검사·화면·DMG를 검증하고 `dist/releases/<버전>/`에 설치 파일·체크섬을 보관합니다. 중간 `.app`과 DMG 사본은 제거해 앱 목록에 중복으로 남기지 않습니다. 실행 가능한 설치본은 `/Applications/Kakao Friend Sender.app` 하나로 유지합니다. 설치 파일은 Git에서 제외하고 GitHub Releases에 첨부합니다.
 
-Windows 빌드는 **Windows x64 + Python 3.12 x64(`py` 런처 포함)**와 전체 소스가 필요합니다. ZIP을 압축 해제한 뒤 빌드 스크립트를 실행하세요. 성공하면 `dist/releases/<버전>/`에 EXE·체크섬·자체 검사 결과가 생성됩니다. `.bat`는 단독 실행 앱이 아닙니다.
-
-GitHub Actions의 **Build Windows executable**은 수동 실행 전용입니다. 푸시·태그·릴리스로 자동 실행하지 않으며 원격 Windows 빌드는 아직 실행하지 않았습니다.
-
-## macOS 릴리스 게시
-
-DMG·APP·EXE·ZIP은 `.gitignore`로 제외하며, 설치 파일은 GitHub Releases의 Assets에 첨부합니다. 푸시만으로 빌드나 게시가 실행되지는 않습니다.
-
-1. `pyproject.toml`, `src/kakaosender/__init__.py`, `package.json`, `package-lock.json`, `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock`, `src-tauri/tauri.conf.json`의 앱 버전을 맞추고 위 다운로드 링크·파일명도 갱신합니다.
-2. 아래 검사·빌드를 실행합니다. 자체 검사는 가상 대상으로만 실행되며 카카오톡에 메시지를 보내지 않습니다.
+## 확인 명령
 
 ```bash
-QT_QPA_PLATFORM=offscreen .venv/bin/python -m pytest -q
-npm ci
-npm run desktop:build
-cargo test --locked --manifest-path src-tauri/Cargo.toml
-"src-tauri/target/release/bundle/macos/Kakao Friend Sender.app/Contents/MacOS/kakao-friend-sender" --self-test /tmp/kakao-release-self-test.json
-codesign --verify --deep --strict "src-tauri/target/release/bundle/macos/Kakao Friend Sender.app"
-hdiutil verify "src-tauri/target/release/bundle/dmg/Kakao Friend Sender_0.1.1_aarch64.dmg"
+src-tauri/target/release/kakao-friend-sender --self-test /tmp/kakao-self-test.json
+src-tauri/target/release/kakao-friend-sender --ui-self-test /tmp/kakao-ui-self-test.json
+src-tauri/target/release/kakao-friend-sender --chat-list-check /tmp/chat-list-private.json
+src-tauri/target/release/kakao-friend-sender --identity-check /tmp/kakao-identity-check.json
+src-tauri/target/release/kakao-friend-sender --installation-info
 ```
 
-3. 자체 검사 JSON의 `ok`·`frozen`이 모두 `true`인지 확인하고 체크섬을 생성합니다. 아래 명령의 버전은 게시할 버전으로 바꿉니다.
+- `--self-test`: 가상 10,000개 목록·100개 대상·중복 방지를 검사합니다. 실제 전송하지 않습니다.
+- `--ui-self-test FILE [화면] [compact]`: 가상 목록을 렌더링하고 JSON·PNG를 저장한 뒤 종료합니다. 화면은 `composer`, `search`, `history`, `settings`, `empty`, `confirm`이며 카카오톡에 접근하지 않습니다.
+- `--chat-list-check`: 실제 채팅 목록만 읽습니다. 개별 방을 열거나 입력·전송하지 않습니다. 결과에는 대화방 이름이 있으므로 공개하지 마세요.
+- `--identity-check`: 방 객체·셀의 ID 후보 속성, 본인 방 제목 일치 여부, 열린 창의 입력창·버튼 구조를 읽습니다. 이름·속성값을 저장하거나 입력·전송하지 않습니다. 고유 ID라고 판정하는 검사는 아닙니다.
+- `--self-chat-test 본인이름 결과파일`: **본인 방에 테스트 글·사진을 실제 전송**하고 창 닫기까지 검사합니다. 지정한 이름의 본인 방이 유일할 때만 시작하며 기존 이력·초안 보호를 유지합니다. 실패 시 자동 재시도하지 않습니다.
+- `--installation-info`: macOS 설치 위치·버전·DMG 실행 여부를 출력합니다. 앱을 교체하거나 실행하지 않습니다.
 
-```bash
-mkdir -p dist/releases/0.1.1
-cp "src-tauri/target/release/bundle/dmg/Kakao Friend Sender_0.1.1_aarch64.dmg" dist/releases/0.1.1/Kakao-Friend-Sender-0.1.1-macos-arm64.dmg
-cd dist/releases/0.1.1
-shasum -a 256 Kakao-Friend-Sender-0.1.1-macos-arm64.dmg > SHA256SUMS.txt
-cd ../../..
-```
+자동 검사 52개와 앱 서명·DMG·화면 검사를 통과했습니다. 실기기에서는 본인 방 진입까지 확인했으며, 기존 초안이 감지돼 글·사진 전송 완료 검증은 중단된 상태입니다. 설치·업데이트 검사는 임시 폴더에서 신규 설치, 기존 앱 교체, 실패 복구, 동시 설치 차단을 확인합니다.
 
-4. 변경을 커밋·푸시하고 같은 커밋에 태그를 붙입니다. GitHub CLI는 저장소 쓰기 권한이 있는 계정으로 로그인해야 합니다.
+## 지원 범위·제한
 
-```bash
-git push origin main
-git tag v0.1.1
-git push origin v0.1.1
-gh release create v0.1.1 \
-  dist/releases/0.1.1/Kakao-Friend-Sender-0.1.1-macos-arm64.dmg \
-  dist/releases/0.1.1/SHA256SUMS.txt \
-  --repo zeongzaehoon/kakao-message --verify-tag --draft --prerelease \
-  --title "v0.1.1 — macOS 개발 빌드" \
-  --notes "Apple Silicon / macOS 14.4 이상. ad-hoc 서명, 미공증 개발 빌드. Windows 전송 미지원."
-gh release view v0.1.1 --repo zeongzaehoon/kakao-message
-gh release edit v0.1.1 --repo zeongzaehoon/kakao-message --draft=false
-```
+- macOS 전송은 KakaoTalk 26.9.0에서 관측한 접근성 구조를 사용합니다. 공식 카카오 API·AI·OCR·고정 좌표를 사용하지 않습니다.
+- Windows는 Rust 화면 빌드만 지원합니다. 카카오톡 연동·전송과 실제 Windows 빌드 실행은 미검증입니다.
+- JPG·PNG·WEBP·BMP, 최대 10장·전송용 PNG 한 장 20 MB·합계 60 MB입니다. 초과하면 비율을 유지해 축소합니다. 원본은 최대 128 MB·6,400만 화소이며 처리 시 2,400만 화소 이하로 줄입니다. 움직이는 사진은 지원하지 않습니다.
+- 접근성에 노출된 목록만 읽으므로 숨김·보관 방을 포함한 계정 전체를 보장하지 않습니다. 전체 수를 확인하지 못하면 전송하지 않습니다.
+- 전송 완료는 입력창·사진 확인창의 상태로 판단합니다. 서버 수신·상대 수신·읽음을 보장하지 않습니다.
+- 전송 이력은 기존 `~/Library/Application Support/KakaoFriendSender/attempts.sqlite3`를 그대로 사용합니다. 기존 텍스트·사진 이력 키 형식도 유지합니다.
+- 프로세스·화면 요소 재생성, 사진 인코딩 변경을 넘는 영구 중복 방지는 보장하지 않습니다. 결과가 불확실하면 카카오톡에서 확인하세요.
+- 기존 `profile-darwin.json`의 입력창·전송 버튼 설정을 읽습니다. 메인 목록 구조는 현재 관측된 구조를 사용합니다.
+- 대화창은 고정된 창 식별 번호 대신 선택한 행·제목·입력창·전송 버튼으로 확인한 뒤 해당 창 객체를 유지합니다. 본인 방의 표시용 접두어는 다른 방과 제목이 겹치지 않을 때만 허용합니다.
+- 선택은 순번이 아닌 세션 키로 저장하며, 같은 객체·이름을 유지한 순서 변경은 허용합니다. 객체 교체·이름 변경·카카오톡 재시작 시 재조회·재선택이 필요합니다.
+- 세션 키는 카카오톡의 영구 ID가 아닙니다. 접근성 객체가 같은 이름의 다른 방으로 재사용되는 경우까지 구분할 영구 식별자는 아직 확보하지 못했습니다.
+- Rust 버전의 실제 글·사진 전송과 대량 클라이언트의 소요 시간은 실기기 검증이 필요합니다. 모의 검사 시간을 실제 전송 시간으로 보지 않습니다.
 
-웹에서도 **Releases → Draft a new release**에서 태그·설명을 입력하고 DMG·체크섬을 첨부한 뒤 게시할 수 있습니다. 릴리스 설명에는 지원 환경, 변경 사항, 검사 결과, 미검증 범위를 기재합니다. 게시 후 Assets에서 실제 파일을 내려받아 같은 폴더에서 `shasum -a 256 -c SHA256SUMS.txt`로 확인합니다. 기존 버전의 파일을 덮어쓰지 않고 새 버전·태그로 게시합니다.
+## 디렉터리
 
-## 진단·검증
+- `src-tauri/src/` — Rust 화면, 접근성, 전송, 사진, SQLite, 자체 검사.
+- `src-tauri/` — Cargo 의존성·잠금 파일, 앱 아이콘, Tauri 배포 설정.
+- `scripts/` — Mac 검증·패키징·중간 앱 정리와 Windows Rust 빌드 진입점.
+- `.github/workflows/` — 수동 Windows 빌드. 푸시만으로 실행되지 않습니다.
+- `dist/` — Git에서 제외한 설치 파일·체크섬·이전 소스 백업.
 
-```bash
-.venv/bin/python -m kakaosender --chat-list-check /tmp/chat-list-private.json
-.venv/bin/python -m kakaosender --diagnose /tmp/diagnostic-private.json
-.venv/bin/python -m kakaosender --help
-```
-
-목록 검사·진단은 메시지를 보내지 않습니다. 진단 JSON에는 개인 정보가 포함될 수 있어 저장소에 올리지 않습니다. 본인 전송·초안 정리 명령은 사용자가 요청하고 본인 대상으로 확인한 경우에만 실행합니다.
-
-v0.1.1은 Python 회귀 검사 141개, Rust 검사 1개, Mac 동결 앱 자체 검사·서명·DMG 검증을 통과했습니다. 본인 채팅의 글·사진 수신과 창 닫기는 각각 확인했으나, 화면 갱신 오류 수정본과 여러 방 연속 전송은 실기기 검증 전입니다.
-
-## 디렉터리 안내
-
-- `src/kakaosender/` — Qt 화면, 순차 전송, 사진 처리, 설정·이력 저장.
-- `src/kakaosender/adapters/` — 채팅 목록·창 식별, 공통 전송, OS 접근성 드라이버.
-- `src-tauri/` — Rust 실행기, 번들 설정, 앱 아이콘.
-- `requirements/` — macOS·Windows 빌드 의존성 및 고정 버전·해시.
-- `scripts/` — 런타임 진입점과 macOS·Windows 빌드 스크립트.
-- `tests/` — 모의 드라이버·Qt 화면 회귀 검사. 실제 카카오톡에 전송하지 않습니다.
-- `.github/workflows/` — 수동 Windows 빌드 워크플로.
-
-프로젝트 문서는 이 README로 통합합니다. 실행 환경·캐시·개인 진단·화면 캡처·전송 이력은 Git에서 제외하며, 배포 파일은 Releases에 첨부합니다.
+문서는 이 README로 통합합니다. 개인 진단·설정·전송 이력·캡처·빌드 산출물은 저장소에 올리지 않습니다.

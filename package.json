@@ -1,10 +1,10 @@
 {
     "name": "kakao-friend-sender-desktop",
-    "version": "0.1.1",
+    "version": "0.2.7",
     "private": true,
     "scripts": {
         "tauri": "tauri",
-        "desktop:build": "tauri build --bundles app,dmg -- --locked",
+        "desktop:build": "node scripts/build_macos.mjs",
         "desktop:dev": "tauri dev"
     },
     "devDependencies": {
